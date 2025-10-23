@@ -1,18 +1,40 @@
-
 #include "grid.hpp"
 
-int AskInt(int min, int max, const char* text) {
-	int variable = -1;
+
+int AskInt(int min, int max, const char* text) 
+{
+	int variable = min-1;
 	while ((variable < min || variable > max)) {
-		//std::cout << "Entrer un nombre entre " << min << " et " << max << ":" << std::endl;
 		std::cout << text << std::endl;
 		std::cin >> variable;
+
 		if (std::cin.fail()) {
 			std::cin.clear();
 			std::cin.ignore(INT_MAX);
 		}
 	}
 	return variable;
+}
+
+int GenerateRandomNumber(int min, int max) 
+{
+	return rand() % (max - min + 1) + min;
+}
+
+const char* ChooseColor(bool condition, const char* firstColor, const char* secondColor)
+{
+	return (condition ? firstColor : secondColor);
+}
+
+//void CheckPtr(void* ptr)
+//{
+//	if (ptr == nullptr) exit(1);
+//}
+
+
+bool CheckCoordinate(Grid* grid, int row, int col)
+{
+	return (row >= 0 && col >= 0 && row < grid->rowCount && col < grid->colCount);
 }
 
 void AskDifficulty(Grid* grid)
@@ -23,123 +45,152 @@ void AskDifficulty(Grid* grid)
 	switch (difficulty)
 	{
 	case 1:
-		grid->column = 9;
-		grid->line = 9;
+		grid->rowCount = 9;
+		grid->colCount = 9;
 		break;
 	case 2:
-		grid->column = 16;
-		grid->line = 16;
+		grid->rowCount = 16;
+		grid->colCount = 16;
 		break;
 	case 3:
-		grid->column = 16;
-		grid->line = 30;
+		grid->rowCount = 16;
+		grid->colCount = 30;
 		break;
 	case 4:
-		grid->column = AskInt(1, 48, "Rentrer le nombre de colonne : ");
-		grid->line = AskInt(1, 48, "Rentrer le nombre de ligne : ");
-		break;
-	default:
+		grid->rowCount = AskInt(1, 48, "Rentrer le nombre de colonne : ");
+		grid->colCount = AskInt(1, 48, "Rentrer le nombre de ligne : ");
 		break;
 	}
 }
 
-void PrintElement(Grid* grid, int i, int j)
+void PrintElement(Grid* grid, int i, int j, bool won)
 {
-	if (grid->cellTab[i][j].isAMine)
-	{
-		std::cout << "\033[31m" << "*" << "\033[0m";
-		return;
-	}
 	if (grid->cellTab[i][j].isReveal == false)
 	{
 		if (grid->cellTab[i][j].isFlag)
 		{
-			std::cout << "\033[33m" << "F" << "\033[0m";
-			return;
+			std::cout << ORANGE << "F" << RESETCOLOR;
 		}
-		std::cout << " ";
+		else
+		{
+			std::cout << " ";
+		}
 		return;
 	}
-	//if (grid->cellTab[i][j].isAMine)
-	//{
-	//	std::cout << "\033[31m" << "*" << "\033[0m";
-	//	return;
-	//}
+	if (grid->cellTab[i][j].isAMine && grid->cellTab[i][j].isReveal)
+	{	
+		std::cout << ChooseColor(won, GREEN, RED) << "*" << RESETCOLOR;
+		return;
+	}
 	std::cout << grid->cellTab[i][j].mineAround;
 }
 
-void DisplayGrid(Grid* grid)
+void DisplayGrid(Grid* grid, int posRow, int posCol, bool isFlagMode, bool won)
 {
 	system("cls");
-	std::cout << "    ";
-	for (int i = 0; i < grid->column; i++)
+	std::cout << RESETCOLOR << "    ";
+	for (int col = 0; col < grid->colCount; col++)
 	{
-		std::cout << i;
-		if (i < 10) std::cout << " ";
+		std::cout << col;
+		if (col < 10) std::cout << " ";
 		std::cout << "  ";
 	}
 	std::cout << std::endl;
-	for (int j = 0; j < grid->line; j++)
+
+	for (int row = 0; row < grid->rowCount; row++)
 	{
+		bool needWrapp = false;
 		std::cout << "  ";
-		for (int n = 0; n < grid->column; n++)
-		{
-			std::cout << "+---";
+		for (int col = 0; col < grid->colCount; col++)
+		{	
+			needWrapp = ((row >= posRow && row <= posRow + 1) && (col >= posCol && col <= posCol + 1));
+			if (needWrapp)
+				std::cout << ChooseColor(isFlagMode, ORANGE, RED);
+			std::cout << "+";
+			if (col == posCol + 1)
+				std::cout << RESETCOLOR;
+			std::cout << "---" << RESETCOLOR;
+			needWrapp = ((row >= posRow && row <= posRow + 1) && (col == posCol));
 		}
-		std::cout << "+" << std::endl;
-		std::cout << j;
-		if (j < 10)  std::cout << " ";
-		std::cout << "| ";
-		for (int k = 0; k < grid->column; k++)
+		if (needWrapp)
+			std::cout << ChooseColor(isFlagMode, ORANGE, RED);
+		std::cout << "+" << RESETCOLOR << std::endl;
+		std::cout << row;
+		if (row < 10)  std::cout << " ";
+		needWrapp = (posCol == 0) && (row == posRow);
+		if (needWrapp)
+			std::cout << ChooseColor(isFlagMode, ORANGE, RED);
+		std::cout << "| " << RESETCOLOR;
+		for (int col = 0; col < grid->colCount; col++)
 		{
-			PrintElement(grid, j, k);
-			std::cout << " | ";
+			PrintElement(grid, row, col, won);
+			if ((row == posRow && col == posCol) || (row == posRow && col == posCol-1))
+				std::cout << ChooseColor(isFlagMode, ORANGE, RED);
+			std::cout << " | " << RESETCOLOR;
 		}
 		std::cout << std::endl;
 	}
 	std::cout << "  ";
-	for (int v = 0; v < grid->column; v++)
-	{
-		std::cout << "+---";
+	bool test = false;
+	for (int col = 0; col < grid->colCount; col++)
+	{	
+		test = ((posRow == grid->rowCount - 1) && (posCol <= col && posCol >= col-1));
+		if (test)//if (posCol == col && posRow == grid->rowCount-1)
+			std::cout << ChooseColor(isFlagMode, ORANGE, RED);
+		std::cout << "+" << RESETCOLOR;
+		test = (posCol == col && posRow == grid->rowCount - 1);
+		if (test)
+			std::cout << ChooseColor(isFlagMode, ORANGE, RED);
+		std::cout << "---" << RESETCOLOR;
 	}
-	std::cout << "+" << std::endl;
+	if (test)
+		std::cout << ChooseColor(isFlagMode, ORANGE, RED);;
+	std::cout << "+" << RESETCOLOR <<std::endl;
+
+	if (isFlagMode)
+		std::cout << "Mode Drapeau :\nENTER : Placer/enlever un drapeau\nESC : Quitter le mode Drapeau" << std::endl;
+	else
+		std::cout << "ENTER : Reveler la case" << std::endl;
+	
+	if (won)
+		std::cout << GREEN;
+	else
+		std::cout << RED;
+
 }
 
 int MineAroundCalculator(Grid* grid, int i, int j)
 {
 	int mineNbr = 0;
 
-	for (int k = -1; k <= 1; k++)
+	for (int k = -1; k <= 1; ++k)
 	{
-		for (int n = -1; n <= 1; n++)
+		for (int n = -1; n <= 1; ++n)
 		{
 			if (k == 0 && n == 0)
 			{
 				continue;
 			}
 
-			if (i + k >= 0 && j + n >= 0 && i + k < grid->line && j + n < grid->column)
-			{
-				if (grid->cellTab[i + k][j + n].isAMine)
-				{
-					mineNbr++;
-				}
-			}
+			int ki = i + k;
+			int nj = j + n;
+
+			if (CheckCoordinate(grid, ki, nj) && grid->cellTab[ki][nj].isAMine)
+				mineNbr++;
 		}
 	}
 	return mineNbr;
 }
 
-void UpdateCell(Grid* grid)
+void UpdateCells(Grid* grid)
 {
-	for (int i = 0; i < grid->line; i++)
+	for (int i = 0; i < grid->rowCount; ++i)
 	{
-		for (int j = 0; j < grid->column; j++)
+		for (int j = 0; j < grid->colCount; ++j)
 		{
 			if (!grid->cellTab[i][j].isAMine)
 			{
 				grid->cellTab[i][j].mineAround = MineAroundCalculator(grid, i, j);
-				//std::cout << grid->cellTab[i][j].mineAround << std::endl;
 			}
 		}
 	}
@@ -149,25 +200,25 @@ void CreateGrid(Grid* grid)
 {
 	AskDifficulty(grid);
 
-	grid->totalMine = (int)(grid->column * grid->line) * 0.15f;
+	grid->totalMine = (int)((grid->colCount * grid->rowCount) * 0.15f);
 
-	grid->cellTab = (Cell**)malloc(sizeof(Cell) * grid->line);
+	grid->cellTab = (Cell**)malloc(sizeof(Cell*) * grid->rowCount);
+
 	if (grid->cellTab == nullptr) exit(1);
-	for (int i = 0; i < grid->line; i++)
+
+
+	for (int col = 0; col < grid->rowCount; ++col)
 	{
-		grid->cellTab[i] = (Cell*)malloc(sizeof(Cell) * grid->column);
-		if (grid->cellTab[i] == nullptr) exit(1);
-		for (int j = 0; j < grid->column; j++)
-		{
-			grid->cellTab[i][j] = InitialiseCell();
-		}
+		grid->cellTab[col] = (Cell*)malloc(sizeof(Cell) * grid->colCount);
+
+		if (grid->cellTab[col] == nullptr) exit(1);
+
+		for (int row = 0; row < grid->colCount; ++row)
+			grid->cellTab[col][row] = InitialiseCell();
 	}
-	DisplayGrid(grid);
-}
 
-int GenerateRandomNumber(int min, int max) {
 
-	return rand() % (max - min + 1) + min;
+	DisplayGrid(grid, 0, 0, false, false);
 }
 
 void PlaceMine(Grid* grid)
@@ -175,17 +226,19 @@ void PlaceMine(Grid* grid)
 	int i;
 	int j;
 	int mineCounter = grid->totalMine;
-	for (int k = 0; k < mineCounter; k++)
+
+	for (int k = 0; k < mineCounter; ++k)
 	{
-		i = GenerateRandomNumber(0, grid->column - 1);
-		j = GenerateRandomNumber(0, grid->line - 1);
+		i = GenerateRandomNumber(0, grid->rowCount - 1);
+		j = GenerateRandomNumber(0, grid->colCount - 1);
+
 		if (grid->cellTab[i][j].isAMine || grid->cellTab[i][j].isReveal)
 		{
-			k--;
+			--k;
 			continue;
 		}
-		grid->cellTab[i][j].isAMine = true;
 
+		grid->cellTab[i][j].isAMine = true;
 	}
 }
 
@@ -195,11 +248,11 @@ void RevealCase(Grid* grid, int i, int j)
 	{
 		for (int n = -1; n <= 1; n++)
 		{
-			if (i + k >= 0 && j + n >= 0 && i + k < grid->line && j + n < grid->column)
+			if (i + k >= 0 && j + n >= 0 && i + k < grid->rowCount && j + n < grid->colCount)
 			{
 
 
-				if (grid->cellTab[i + k][j + n].mineAround == 0 && !(grid->cellTab[i + k][j + n].isReveal) && !(grid->cellTab[i + k][j + n].isFlag))
+				if (grid->cellTab[i + k][j + n].mineAround == 0 && !(grid->cellTab[i + k][j + n].isReveal) && !(grid->cellTab[i + k][j + n].isFlag) && !(grid->cellTab[i+k][j+n].isAMine))
 				{
 					grid->cellTab[i + k][j + n].isReveal = true;
 					RevealCase(grid, i + k, j + n);
@@ -215,112 +268,25 @@ void RevealCase(Grid* grid, int i, int j)
 
 void RevealGrid(Grid* grid)
 {
-	for (int i = 0; i < grid->column; i++)
-	{
-		for (int j = 0; j < grid->line; j++)
-		{
-			grid->cellTab[i][j].isReveal = true;
-		}
-	}
+	for (int row = 0; row < grid->rowCount; ++row)
+		for (int col = 0; col < grid->colCount; ++col)
+			grid->cellTab[row][col].isReveal = true;
 }
 
 bool CheckWin(Grid* grid)
 {
-	int caseNbr = (grid->column * grid->line) - grid->totalMine;
-	for (int i = 0; i < grid->column; i++)
+	int caseNbr = (grid->colCount * grid->rowCount) - grid->totalMine;
+
+	for (int row = 0; row < grid->rowCount; ++row)
 	{
-		for (int j = 0; j < grid->line; j++)
+		for (int col = 0; col < grid->colCount; ++col)
 		{
-			if (grid->cellTab[i][j].isReveal)
+			if (grid->cellTab[row][col].isReveal)
 			{
-				caseNbr -= 1;
+				--caseNbr;
 			}
 		}
 	}
-	if (caseNbr <= 0)
-	{
-		return true;
-	}
-	return false;
+
+	return caseNbr <= 0;
 }
-
-void DisplayWin(bool win)
-{
-	if (win)
-	{
-		std::cout << "GG well play ta gagne" << std::endl;
-		return;
-	}
-	std::cout << "Cheh ta perdu" << std::endl;
-
-}
-
-//void MainLoop()
-//{	
-//	Grid grid;
-//	Grid* gridPtr = &grid;
-//	srand(time(NULL));
-//	CreateGrid(gridPtr);
-//	int x;
-//	int y;
-//	bool isPlaying = true;
-//	bool win = false;
-//	x = AskInt(0, gridPtr->column, "Rentrer les coordonnes :\nx :");
-//	y = AskInt(0, gridPtr->line, "y : ");
-//
-//	gridPtr->cellTab[x][y].isAMine = false;
-//	gridPtr->cellTab[x][y].isReveal = true;
-//
-//	PlaceMine(gridPtr);
-//
-//	UpdateCell(gridPtr);
-//
-//	RevealCase(gridPtr, x, y);
-//
-//	while (isPlaying)
-//	{	
-//		DisplayGrid(gridPtr);
-//
-//		while (AskInt(0,1, "Veux tu placer un drapeau ? (0 = non, 1 = oui)"))
-//		{
-//			x = AskInt(0, gridPtr->column, "Rentrer les coordonnes :\n");
-//			y = AskInt(0, gridPtr->line, "y :");
-//			gridPtr->cellTab[x][y].isFlag = true;
-//			DisplayGrid(gridPtr);
-//		}
-//		
-//		//std::cout << grid->cellTab[x][y].mineAround << std::endl;
-//		x = AskInt(0, gridPtr->column, "Rentrer les coordonnees :\nx :");
-//		y = AskInt(0, gridPtr->line, "y :");
-//
-//		gridPtr->cellTab[x][y].isReveal = true;
-//
-//		RevealCase(gridPtr, x, y);
-//
-//		if (gridPtr->cellTab[x][y].isAMine)
-//		{	
-//			win = false;
-//			isPlaying = false;
-//		}
-//		if (CheckWin(gridPtr))
-//		{	
-//			win = true;
-//			isPlaying = false;
-//		}
-//	}
-//	EndGame(gridPtr);
-//	DisplayWin(win);
-//}
-//
-//void Game() {
-//	bool playing = true;
-//	while (playing)
-//	{
-//		MainLoop();
-//		if (!AskInt(0, 1, "Veux tu rejouer ? (0 = non, 1 = oui)"))
-//		{	
-//			playing = false;
-//		}
-//		system("cls");
-//	}
-//}
