@@ -128,13 +128,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="cell.cpp" />
-    <ClCompile Include="cell.hpp" />
+    <ClCompile Include="cell.h" />
     <ClCompile Include="grid.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="color.h" />
-    <ClInclude Include="grid.hpp" />
+    <ClInclude Include="grid.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

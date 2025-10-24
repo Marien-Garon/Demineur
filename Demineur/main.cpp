@@ -1,27 +1,30 @@
 #include <conio.h>
-#include "grid.hpp"
+#include "grid.h"
 #include "color.h"
 
 
-#define KEY_UP 72
-#define KEY_DOWN 80
-#define KEY_LEFT 75
-#define KEY_RIGHT 77
-#define ENTER 13
-#define ESC 27
+int const KEY_UP = 72;
+int const KEY_DOWN = 80;
+int const KEY_LEFT = 75;
+int const KEY_RIGHT = 77;
+int const ENTER = 13;
+int const ESC = 27;
+
 
 
 int clamp(int val, int min, int max)
 {
 	if (val < min) val = min;
-	if (val >= max)  val = max -1;
+	else if (val >= max)  val = max -1;
 	return val;
 }
 
 bool KeyInput(Grid* grid, int* row, int* col, bool isFlagMode)
 {
-	int key = 0;
+	// le boolean noteEscape sert a savoir si on quitte le mode drapeau
 	bool notEscape = true;
+	int key = sizeof(int);
+
 	while (key != ENTER && key != ESC)
 	{
 		switch (key = _getch())
@@ -42,6 +45,7 @@ bool KeyInput(Grid* grid, int* row, int* col, bool isFlagMode)
 			notEscape = false;
 			break; 
 		}
+
 		*row = clamp(*row,0, grid->rowCount);
 		*col = clamp(*col, 0, grid->colCount);
 		DisplayGrid(grid, *row, *col, isFlagMode, false);
@@ -53,105 +57,103 @@ void DisplayWin(bool win)
 {
 	if (win)
 	{
-		std::cout << "GG well play ta gagne" << RESETCOLOR << std::endl;
+		std::cout << "Felicitation tu a gagne" << RESETCOLOR << std::endl;
 		return;
 	}
-	std::cout << "Cheh ta perdu" << RESETCOLOR << std::endl;
+	std::cout << "Dommage tu as perdu" << RESETCOLOR << std::endl;
 
 }
+
 
 void MainLoop()
 {
 	Grid grid;
-	Grid* gridPtr = &grid;
 
 	srand(time(NULL));
 
-	CreateGrid(gridPtr);
+	CreateGrid(&grid);
 
 	int row = 0;
 	int col = 0;
 	bool isPlaying = true;
-	bool win = false;
+	bool won = false;
 
-	//x = AskInt(0, gridPtr->column, "Rentrer les coordonnes :\nx :");
-	//y = AskInt(0, gridPtr->line, "y : ");
-	KeyInput(gridPtr, &row, &col,false);
+	KeyInput(&grid, &row, &col,false);
 
 
-	gridPtr->cellTab[row][col].isAMine = false;
-	gridPtr->cellTab[row][col].isReveal = true;
+	grid.cellTab[row][col].isAMine = false;
+	grid.cellTab[row][col].isReveal = true;
 
-	PlaceMine(gridPtr);
+	PlaceMine(&grid);
 
-	UpdateCells(gridPtr);
+	UpdateCells(&grid);
 
-	RevealCase(gridPtr, row, col);
+	RevealCase(&grid, row, col);
+
+	DisplayGrid(&grid, row, col, false, false);
+
+	//Cas particulier ou la grille est si petite que l'on peut révéler toute les case d'un seule coup
+	if (CheckWin(&grid))  
+	{
+		won = true;
+		isPlaying = false;
+	}
 
 	while (isPlaying)
 	{
-		DisplayGrid(gridPtr, row, col, false, false);
 
-		//while (AskInt(0, 1, "Veux tu placer un drapeau ? (0 = non, 1 = oui)"))
-		//{
-		//	x = AskInt(0, gridPtr->column, "Rentrer les coordonnes :\n");
-		//	y = AskInt(0, gridPtr->line, "y :");
-
-		//	gridPtr->cellTab[x][y].isFlag = true;
-		//	DisplayGrid(gridPtr, x, y);
-		//}
-
-		while (KeyInput(gridPtr, &row, &col, true))
+		//Boucle tant que le joueur veut placer des drapeaux
+		while (KeyInput(&grid, &row, &col, true))
 		{	
-			gridPtr->cellTab[row][col].isFlag = !gridPtr->cellTab[row][col].isFlag;
+			grid.cellTab[row][col].isFlag = !grid.cellTab[row][col].isFlag;
 
-
-			DisplayGrid(gridPtr, row, col, true, false);
+			DisplayGrid(&grid, row, col, true, false);
 		}
 
-		KeyInput(gridPtr, &row, &col, false);
+		
+		KeyInput(&grid, &row, &col, false);
 
-		//x = AskInt(0, gridPtr->column, "Rentrer les coordonnees :\nx :");
-		//y = AskInt(0, gridPtr->line, "y :");
+		grid.cellTab[row][col].isReveal = true;
 
-		gridPtr->cellTab[row][col].isReveal = true;
+		RevealCase(&grid, row, col);
 
-		RevealCase(gridPtr, row, col);
+		DisplayGrid(&grid, row, col, false, false);
 
-		if (gridPtr->cellTab[row][col].isAMine)
+
+		if (grid.cellTab[row][col].isAMine)
 		{
-			win = false;
+			won = false;
 			isPlaying = false;
 		}
-		else if (CheckWin(gridPtr))
+		else if (CheckWin(&grid))
 		{
-			win = true;
+			won = true;
 			isPlaying = false;
 		}
 	}
-	RevealGrid(gridPtr);
-	DisplayGrid(gridPtr, row, col, false,win);
-	DisplayWin(win);
+
+	RevealGrid(&grid);
+	DisplayGrid(&grid, row, col, false, won);
+	DisplayWin(won);
 }
 
 void Game() {
+
 	bool playing = true;
-	while (playing)
+
+	do
 	{
-		MainLoop();
-		if (!AskInt(0, 1, "Veux tu rejouer ? (0 = non, 1 = oui)"))
-		{
-			playing = false;
-		}
 		system("cls");
-	}
+		MainLoop();
+	} 
+	while (AskInt(0, 1, "Veux tu rejouer ?\n0 = non\n1 = oui"));
 }
+
 
 
 int main()
 {
 	Game();
+
 	return 0;
 }
-
-

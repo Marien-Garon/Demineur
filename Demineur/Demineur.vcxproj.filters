@@ -18,7 +18,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="cell.hpp">
+    <ClCompile Include="cell.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClCompile>
     <ClCompile Include="grid.cpp">
@@ -29,7 +29,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="grid.hpp">
+    <ClInclude Include="grid.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
     <ClInclude Include="color.h">
